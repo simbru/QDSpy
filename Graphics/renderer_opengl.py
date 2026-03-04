@@ -381,7 +381,10 @@ class Window(pyglet.window.Window):
             self.switch_to()
             super().set_mouse_visible(_visible)
             if not PLATFORM_WINDOWS:
-                self.set_exclusive_mouse(not _visible)
+                # On Wayland/XWayland, exclusive mouse grab captures the
+                # pointer and prevents interacting with other windows
+                # (e.g. the Qt GUI). Hiding the cursor alone is sufficient.
+                pass
             else:
                 if not (_visible):
                     SetCursorPos((0, 0))
