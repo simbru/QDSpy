@@ -299,15 +299,21 @@ class Window(pyglet.window.Window):
         if self.isFullScr and self.isPresent:
             if _isScrOvl:
                 # Screen overlay mode
+                # On Wayland, create hidden so override_redirect and
+                # set_location take effect before the compositor places it
                 super().__init__(
-                    vsync=True, fullscreen=False,  
+                    vsync=True, fullscreen=False,
                     width=_dx, height=_dy, caption=_title,
                     style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
+                    visible=False,
                 )
+                if not PLATFORM_WINDOWS:
+                    self._set_override_redirect(True)
                 self.set_location(
-                    self.Renderer.Screens[_iScrGUI].width +_offset[0], 
+                    self.Renderer.Screens[_iScrGUI].width +_offset[0],
                     _offset[1]
                 )
+                self.set_visible(True)
 
                 # Define a rectangle that covers screen 2 to be able to set the
                 # background colour independently
@@ -325,16 +331,36 @@ class Window(pyglet.window.Window):
                 )
 
         else:
-            # Window mode
+            # Window mode (see overlay comment above re: visible=False)
             super().__init__(
                 vsync=True, width=_dx, height=_dy, caption=_title,
                 style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
+                visible=False,
             )
+            if not PLATFORM_WINDOWS:
+                self._set_override_redirect(True)
             self.set_location(_left, _top)
+            self.set_visible(True)
 
         self.switch_to()
         GL.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT)
         self.isReady = True
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    def _set_override_redirect(self, value):
+        """Set override_redirect to bypass compositor window management."""
+        try:
+            from ctypes import byref
+            from pyglet.libs.x11 import xlib
+            attrs = xlib.XSetWindowAttributes()
+            attrs.override_redirect = int(value)
+            xlib.XChangeWindowAttributes(
+                self._x_display, self._window,
+                xlib.CWOverrideRedirect, byref(attrs)
+            )
+            self._override_redirect = value
+        except Exception:
+            pass
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def on_key_press(self, symbol, modifiers):
