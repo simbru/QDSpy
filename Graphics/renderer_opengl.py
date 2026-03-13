@@ -322,12 +322,14 @@ class Window(pyglet.window.Window):
 
             else:
                 # Standard full-screen mode
+                # Use borderless window instead of pyglet fullscreen,
+                # which shows a decorated window on Wayland/XWayland
                 dx = self.Renderer.Screens[_iScr].width
                 dy = self.Renderer.Screens[_iScr].height
                 super().__init__(
-                    vsync=True, fullscreen=True,
-                    screen=self.Renderer.Screens[_iScr],
+                    vsync=True, fullscreen=False,
                     width=dx, height=dy, caption=_title,
+                    style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
                 )
 
         else:
