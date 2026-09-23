@@ -219,13 +219,16 @@ class VideoCtrl:
                 self.Video.dxFr, self.Video.dyFr, "RGB",
                 frame.tobytes(), pitch=self.Video.dxFr *3,
             )
-            self.Sprite = rdr.getSprite(
-                tmpImg.get_texture(), "stream", self.Group
-            )
-            self.Sprite.position = self.posXY
-            self.Sprite.scale = self.magXY[0]
-            self.Sprite.rotation = self.rot
-            self.Sprite.opacity = self.trans
+            if self.Sprite is None:
+                self.Sprite = rdr.getSprite(
+                    tmpImg.get_texture(), "stream", self.Group
+                )
+                self.Sprite.position = self.posXY
+                self.Sprite.scale = self.magXY[0]
+                self.Sprite.rotation = self.rot
+                self.Sprite.opacity = self.trans
+            else:
+                self.Sprite.image = tmpImg.get_texture()
 
         else:
             if self.Video._useIter:
