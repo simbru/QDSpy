@@ -89,7 +89,7 @@ class Video:
             self._reiterate()
         else:
             self.frames = np.zeros(
-                (self.nFr, self.dxFr, self.dyFr, 3), dtype=np.uint8
+                (self.nFr, self.dyFr, self.dxFr, 3), dtype=np.uint8
             )
             tmp = self.video.iter_frames()
             for iFr in range(self.nFr):
@@ -218,15 +218,18 @@ class VideoCtrl:
 
             tmpImg = rdr.getImageData(
                 self.Video.dxFr, self.Video.dyFr, "RGB",
-                frame.tostring(), pitch=self.Video.dxFr *3,
+                frame.tobytes(), pitch=self.Video.dxFr *3,
             )
-            self.Sprite = rdr.getSprite(
-                tmpImg.get_texture(), "stream", self.Group
-            )
-            self.Sprite.position = self.posXY
-            self.Sprite.scale = self.magXY[0]
-            self.Sprite.rotation = self.rot
-            self.Sprite.opacity = self.trans
+            if self.Sprite is None:
+                self.Sprite = rdr.getSprite(
+                    tmpImg.get_texture(), "stream", self.Group
+                )
+                self.Sprite.position = self.posXY
+                self.Sprite.scale = self.magXY[0]
+                self.Sprite.rotation = self.rot
+                self.Sprite.opacity = self.trans
+            else:
+                self.Sprite.image = tmpImg.get_texture()
 
         else:
             if self.Video._useIter:
