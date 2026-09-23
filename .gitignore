@@ -10,3 +10,4 @@ qdspy/
 .vscode/*
 RecordedStimuli/*
 Stimuli/StimChallenge/*
+*.avi
