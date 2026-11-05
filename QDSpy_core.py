@@ -401,7 +401,15 @@ def main(_fNameStim, _isParentGUI, _Sync=None):
                             _Sync.setStateSafe(mpr.COMPILING)
                             try:
                                 #subprocess.check_call(["python", _fNameStim])
-                                subprocess.check_call([sys.executable, _fNameStim])
+                                # Stimulus scripts run from their own folder, so
+                                # `QDS` must be made importable explicitly
+                                env = os.environ.copy()
+                                env["PYTHONPATH"] = os.pathsep.join(
+                                    filter(None, [glo.QDSpy_path, env.get("PYTHONPATH")])
+                                )
+                                subprocess.check_call(
+                                    [sys.executable, _fNameStim], env=env
+                                )
                                 Log.write("ok", "... done")
 
                             except subprocess.CalledProcessError:
