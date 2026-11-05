@@ -17,6 +17,7 @@ All rights reserved.
 # ---------------------------------------------------------------------
 __author__ 	= "code@eulerlab.de"
 
+import os
 from qds.QDSpy_file_support import getQDSpyPath, getCompletePath
 
 # fmt: off
@@ -27,6 +28,10 @@ QDSpy_appID                 = u"QDSpy3.v0.9.9.thomas_euler.eulerlab.de"
 QDSpy_fullScrWinName        = "QDSPY_STIMULUS"
 QDSpy_codePath              = "qds"
 QDSpy_path                  = getQDSpyPath()
+QDSpy_isWayland             = (
+    bool(os.environ.get("WAYLAND_DISPLAY"))
+    or os.environ.get("XDG_SESSION_TYPE") == "wayland"
+)
 
 # Log messages etc.
 QDSpy_isDebug               = False

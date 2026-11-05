@@ -20,7 +20,7 @@ dependencies = [
     "moviepy>=2.2.1",
     "pyglet<1.5.6",
     "pillow>=12.1.1",
-    "pyqt6>=6.9.0"
+    "pyqt6>=6.9.0; sys_platform == 'linux' and platform_machine == 'x86_64'",
 ]
 
 [tool.uv]
