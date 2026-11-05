@@ -20,7 +20,7 @@ if not PLATFORM_WINDOWS:
     # Check if screens exist under Linux
     try:
         import pyglet.gl as GL
-    except Exception:
+    except pyglet.canvas.xlib.NoSuchDisplayException:
         print("FATAL ERROR: No display devices detected")
         sys.exit()
 

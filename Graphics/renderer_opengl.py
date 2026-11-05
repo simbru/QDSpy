@@ -34,8 +34,9 @@ import ctypes
 import platform
 import pyglet
 import numpy as np
-import pyglet.gl as GL  
-from pyglet.gl.gl_info import GLInfo 
+import pyglet.gl as GL
+import QDSpy_global as glo
+from pyglet.gl.gl_info import GLInfo
 from pyglet.image import ImageData
 
 pyglet.options["debug_gl"] = False
@@ -299,21 +300,16 @@ class Window(pyglet.window.Window):
         if self.isFullScr and self.isPresent:
             if _isScrOvl:
                 # Screen overlay mode
-                # On Wayland, create hidden so override_redirect and
-                # set_location take effect before the compositor places it
                 super().__init__(
                     vsync=True, fullscreen=False,
                     width=_dx, height=_dy, caption=_title,
                     style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
-                    visible=False,
+                    visible=not glo.QDSpy_isWayland,
                 )
-                if not PLATFORM_WINDOWS:
-                    self._set_override_redirect(True)
-                self.set_location(
+                self._place_window(
                     self.Renderer.Screens[_iScrGUI].width +_offset[0],
                     _offset[1]
                 )
-                self.set_visible(True)
 
                 # Define a rectangle that covers screen 2 to be able to set the
                 # background colour independently
@@ -322,47 +318,63 @@ class Window(pyglet.window.Window):
 
             else:
                 # Standard full-screen mode
-                # Use borderless window instead of pyglet fullscreen,
-                # which shows a decorated window on Wayland/XWayland
-                dx = self.Renderer.Screens[_iScr].width
-                dy = self.Renderer.Screens[_iScr].height
-                super().__init__(
-                    vsync=True, fullscreen=False,
-                    width=dx, height=dy, caption=_title,
-                    style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
-                )
+                scr = self.Renderer.Screens[_iScr]
+                dx = scr.width
+                dy = scr.height
+                if glo.QDSpy_isWayland:
+                    # pyglet fullscreen shows a decorated window on XWayland
+                    super().__init__(
+                        vsync=True, fullscreen=False,
+                        screen=scr,
+                        width=dx, height=dy, caption=_title,
+                        style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
+                        visible=False,
+                    )
+                    self._place_window(scr.x, scr.y)
+                else:
+                    super().__init__(
+                        vsync=True, fullscreen=True,
+                        screen=scr,
+                        width=dx, height=dy, caption=_title,
+                    )
 
         else:
-            # Window mode (see overlay comment above re: visible=False)
+            # Window mode
             super().__init__(
                 vsync=True, width=_dx, height=_dy, caption=_title,
                 style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
-                visible=False,
+                visible=not glo.QDSpy_isWayland,
             )
-            if not PLATFORM_WINDOWS:
-                self._set_override_redirect(True)
-            self.set_location(_left, _top)
-            self.set_visible(True)
+            self._place_window(_left, _top)
 
         self.switch_to()
         GL.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT)
         self.isReady = True
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    def _set_override_redirect(self, value):
-        """Set override_redirect to bypass compositor window management."""
-        try:
-            from ctypes import byref
-            from pyglet.libs.x11 import xlib
-            attrs = xlib.XSetWindowAttributes()
-            attrs.override_redirect = int(value)
-            xlib.XChangeWindowAttributes(
-                self._x_display, self._window,
-                xlib.CWOverrideRedirect, byref(attrs)
-            )
-            self._override_redirect = value
-        except Exception:
-            pass
+    def _place_window(self, x, y):
+        """ Move window to the given position
+            XWayland compositors ignore moves of managed windows, so on
+            Wayland the (still hidden) window is made unmanaged first
+        """
+        if glo.QDSpy_isWayland:
+            self._set_override_redirect()
+        self.set_location(x, y)
+        if glo.QDSpy_isWayland:
+            self.set_visible(True)
+
+
+    def _set_override_redirect(self):
+        """ Exclude window from window management by the compositor
+        """
+        from pyglet.libs.x11 import xlib
+        attrs = xlib.XSetWindowAttributes()
+        attrs.override_redirect = 1
+        xlib.XChangeWindowAttributes(
+            self._x_display, self._window,
+            xlib.CWOverrideRedirect, ctypes.byref(attrs)
+        )
+        self._override_redirect = True
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def on_key_press(self, symbol, modifiers):
@@ -409,10 +421,10 @@ class Window(pyglet.window.Window):
             self.switch_to()
             super().set_mouse_visible(_visible)
             if not PLATFORM_WINDOWS:
-                # On Wayland/XWayland, exclusive mouse grab captures the
-                # pointer and prevents interacting with other windows
-                # (e.g. the Qt GUI). Hiding the cursor alone is sufficient.
-                pass
+                # On XWayland, the exclusive grab captures the pointer and
+                # prevents interacting with other windows (e.g. the Qt GUI)
+                if not glo.QDSpy_isWayland:
+                    self.set_exclusive_mouse(not _visible)
             else:
                 if not (_visible):
                     SetCursorPos((0, 0))
