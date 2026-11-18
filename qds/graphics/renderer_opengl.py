@@ -310,10 +310,11 @@ class Window(pyglet.window.Window):
                     style=pyglet.window.Window.WINDOW_STYLE_BORDERLESS,
                     visible=not glo.QDSpy_isWayland,
                 )
-                self._place_window(
-                    self.Renderer.Screens[_iScrGUI].width +_offset[0],
-                    _offset[1]
-                )
+                # Start at the stimulus screen's own origin; with the GUI
+                # screen at (0, 0) and the stimulus screen to its right,
+                # this equals the GUI screen width
+                scr = self.Renderer.Screens[_iScr]
+                self._place_window(scr.x +_offset[0], scr.y +_offset[1])
 
                 # Define a rectangle that covers screen 2 to be able to set the
                 # background colour independently
