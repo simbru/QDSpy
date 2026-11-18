@@ -1394,11 +1394,11 @@ class MainWinClass(QMainWindow, form_class):
 # _____________________________________________________________________
 if __name__ == "__main__":
     # Python's default 'fork' start method on Linux inherits the parent's
-    # X11/Xlib connections (established by Qt) into the child worker process,
-    # causing pyglet's window creation to deadlock under Wayland/XWayland.
-    # Using 'spawn' gives the child a fresh interpreter with no inherited
-    # X11 state.
-    if glo.QDSpy_isWayland and not PLATFORM_WINDOWS:
+    # X11/Xlib connections (opened by Qt and pyglet) into the child worker
+    # process, and two processes sharing one X connection deadlock. This
+    # happens on X11 as well as XWayland, so use 'spawn' on all non-Windows
+    # systems: the child gets a fresh interpreter with no inherited X11 state.
+    if not PLATFORM_WINDOWS:
         import multiprocessing
         multiprocessing.set_start_method('spawn')
 
